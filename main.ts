@@ -112,13 +112,16 @@ interface Occurrence {
 function findOcc(lines: string[], O: string[], strict: boolean, from = 0, eofOnly = false): Occurrence | null {
   const tiers = strict ? [0] : [0, 1, 2];
   for (const tier of tiers) {
+    // The file's lines are normalized once per tier, not once per candidate position: with a long file and a
+    // long O the naive shape is quadratic in the file's size, and a check gives a run only 10 seconds.
+    const nl = lines.map((s) => tierNorm(tier, s));
     const no = O.map((s) => tierNorm(tier, s));
     const positions: number[] = [];
     for (let i = from; i + O.length <= lines.length; i += 1) {
       if (eofOnly && i + O.length !== lines.length) continue;
       let ok = true;
       for (let k = 0; k < O.length; k += 1) {
-        if (tierNorm(tier, lines[i + k]!) !== no[k]) {
+        if (nl[i + k] !== no[k]) {
           ok = false;
           break;
         }
